@@ -2,6 +2,8 @@ package com.example.tadpole_g4.ui.login
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,78 +18,67 @@ fun LoginScreen(
     userViewModel: UserViewModel,
     onLoginSuccess: () -> Unit
 ) {
+    // Variables observadas desde el ViewModel
+    val username by userViewModel.username
+    val password by userViewModel.password
 
-    // VARIABLES
-
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-
-    //variable para mostrar mensajes de error de validación
+    // Variable local para mostrar mensajes de error
     var error by remember { mutableStateOf<String?>(null) }
 
+    // Scroll vertical para evitar recortes o solapamientos
+    val scrollState = rememberScrollState()
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp)
+            .padding(horizontal = 24.dp)
     ) {
-        //LOGO FIJO ARRIBA
         Column(
             modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 60.dp),
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .padding(vertical = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // LOGO SUPERIOR
             Image(
                 painter = painterResource(id = R.drawable.logo_login),
                 contentDescription = "Logo de inicio de sesión",
                 modifier = Modifier
-                    .size(150.dp)
-                    .padding(bottom = 16.dp)
+                    .size(220.dp)
+                    .padding(top = 32.dp, bottom = 48.dp)
             )
-        }
 
-        // FORMULARIO CENTRADO
-        Column(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Campo usuario
+            // FORMULARIO DE LOGIN
             OutlinedTextField(
                 value = username,
                 onValueChange = {
-                    username = it
-                    error = null // limpiar error al escribir
+                    userViewModel.onUsernameChange(it)
+                    error = null
                 },
                 label = { Text("Usuario") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Campo contraseña
             OutlinedTextField(
                 value = password,
                 onValueChange = {
-                    password = it
-                    error = null // 💬 NUEVO: limpiar error al escribir
+                    userViewModel.onPasswordChange(it)
+                    error = null
                 },
                 label = { Text("Contraseña") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-
-            // BOTÓN DE ACCESO CON VALIDACIONES
-
+            // BOTÓN DE ACCESO
             Button(
                 onClick = {
-                    // Validaciones antes de intentar el login
                     when {
                         username.isBlank() -> {
                             error = "El campo de usuario no puede estar vacío"
@@ -99,7 +90,6 @@ fun LoginScreen(
                             error = "La contraseña debe tener al menos 4 caracteres"
                         }
                         else -> {
-                            // Intentar login solo si pasa validaciones
                             if (userViewModel.login(username, password)) {
                                 error = null
                                 onLoginSuccess()
@@ -109,20 +99,26 @@ fun LoginScreen(
                         }
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
             ) {
                 Text("Aceptar")
             }
 
-            // Mostrar mensaje de error si existe
+            // MENSAJE DE ERROR
             error?.let {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = it,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
+
+            Spacer(modifier = Modifier.height(60.dp))
         }
     }
 }
+
+

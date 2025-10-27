@@ -2,10 +2,11 @@ package com.example.tadpole_g4.ui.home
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -19,19 +20,21 @@ import com.example.tadpole_g4.model.User
 @Composable
 fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
 
-
-    // VARIABLES PRINCIPALES
-
+    // Variables principales del ViewModel
     val users = userViewModel.users
     val currentUser = userViewModel.currentUser
 
-    var username by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var editingUser by remember { mutableStateOf<User?>(null) }
+    // Campos del formulario (persisten al girar)
+    var username by rememberSaveable { mutableStateOf("") }
+    var email by rememberSaveable { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
+    var editingUser by rememberSaveable { mutableStateOf<User?>(null) }
 
-    // variable de error para mostrar mensajes de validación
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    // Mensaje de error (también persistente)
+    var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
+
+    // Scroll vertical
+    val scrollState = rememberScrollState()
 
     Scaffold(
         topBar = {
@@ -40,9 +43,8 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
                     Text("Hola, ${currentUser?.username ?: "Usuario"}")
                 },
                 actions = {
-                    //Botón para cerrar sesión
                     TextButton(onClick = {
-                        // Navegar al Login y limpiar la pila para evitar volver atrás
+                        // Cerrar sesión y limpiar pila de navegación
                         navController.navigate("login") {
                             popUpTo("home") { inclusive = true }
                         }
@@ -60,20 +62,22 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
             )
         }
     ) { padding ->
+        // Contenido desplazable
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(scrollState)
                 .padding(padding)
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            //LOGO HOME
+            // LOGO HOME
             Image(
                 painter = painterResource(id = R.drawable.logo_home),
                 contentDescription = "Logo Home",
                 modifier = Modifier
-                    .size(120.dp)
-                    .padding(bottom = 24.dp)
+                    .size(180.dp)
+                    .padding(bottom = 32.dp)
             )
 
             // FORMULARIO CRUD
@@ -81,65 +85,52 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
                 value = username,
                 onValueChange = {
                     username = it
-                    errorMessage = null // limpiar error al escribir
+                    errorMessage = null
                 },
                 label = { Text("Usuario") },
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
                 value = email,
                 onValueChange = {
                     email = it
-                    errorMessage = null //limpiar error al escribir
+                    errorMessage = null
                 },
                 label = { Text("Email") },
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
                 value = password,
                 onValueChange = {
                     password = it
-                    errorMessage = null // limpiar error al escribir
+                    errorMessage = null
                 },
                 label = { Text("Contraseña") },
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-
-            //BOTONES DE ACCIÓN (CON VALIDACIÓN)
-
+            // BOTONES DE ACCIÓN
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 Button(onClick = {
-                    // Validaciones antes de agregar/actualizar
                     when {
-                        username.isBlank() -> {
-                            errorMessage = "El nombre de usuario no puede estar vacío"
-                        }
-                        email.isBlank() -> {
-                            errorMessage = "El email no puede estar vacío"
-                        }
-                        !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> {
+                        username.isBlank() -> errorMessage = "El nombre de usuario no puede estar vacío"
+                        email.isBlank() -> errorMessage = "El email no puede estar vacío"
+                        !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() ->
                             errorMessage = "El formato del email no es válido"
-                        }
-                        password.isBlank() -> {
-                            errorMessage = "La contraseña no puede estar vacía"
-                        }
-                        password.length < 4 -> {
-                            errorMessage = "La contraseña debe tener al menos 4 caracteres"
-                        }
+                        password.isBlank() -> errorMessage = "La contraseña no puede estar vacía"
+                        password.length < 4 -> errorMessage = "La contraseña debe tener al menos 4 caracteres"
                         else -> {
-                            //  agregar o actualizar usuario
                             if (editingUser != null) {
                                 val updatedUser = editingUser!!.copy(
                                     username = username,
@@ -152,7 +143,6 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
                                 userViewModel.addUser(username, email, password)
                             }
 
-                            //limpiar campos al guardar
                             username = ""
                             email = ""
                             password = ""
@@ -165,7 +155,6 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
 
                 if (editingUser != null) {
                     Button(onClick = {
-                        //cancelar edición
                         editingUser = null
                         username = ""
                         email = ""
@@ -177,9 +166,9 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
                 }
             }
 
-            //  Mostrar mensaje de error de validación
+            // MENSAJE DE ERROR
             errorMessage?.let {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = it,
                     color = MaterialTheme.colorScheme.error,
@@ -189,14 +178,12 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-
             // LISTA DE USUARIOS
-
             Text("Lista de usuarios", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
 
-            LazyColumn {
-                items(users) { user ->
+            Column(modifier = Modifier.fillMaxWidth()) {
+                users.forEach { user ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -214,7 +201,6 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
                                 Text(user.email, style = MaterialTheme.typography.bodySmall)
                             }
                             Row {
-                                // Botón editar
                                 TextButton(onClick = {
                                     editingUser = user
                                     username = user.username
@@ -224,8 +210,9 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
                                 }) {
                                     Text("Editar")
                                 }
-                                //Botón eliminar
-                                TextButton(onClick = { userViewModel.deleteUser(user) }) {
+                                TextButton(onClick = {
+                                    userViewModel.deleteUser(user)
+                                }) {
                                     Text("Eliminar")
                                 }
                             }
@@ -233,6 +220,8 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(60.dp))
         }
     }
 }

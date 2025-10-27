@@ -6,6 +6,20 @@ import com.example.tadpole_g4.model.User
 import com.example.tadpole_g4.repository.UserRepository
 
 class UserViewModel : ViewModel() {
+    // Campos del login que deben persistir al rotar la pantalla
+    var username = androidx.compose.runtime.mutableStateOf("")
+        private set
+
+    var password = androidx.compose.runtime.mutableStateOf("")
+        private set
+
+    fun onUsernameChange(newValue: String) {
+        username.value = newValue
+    }
+
+    fun onPasswordChange(newValue: String) {
+        password.value = newValue
+    }
 
     private val repository = UserRepository()
 
