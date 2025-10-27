@@ -43,7 +43,7 @@ fun LoginScreen(
     var error by remember { mutableStateOf<String?>(null) }
 
     // ================================================================
-    // 🔄 NUEVO: ESTADO DE CARGA (animación de validación)
+    // NUEVO: ESTADO DE CARGA (animación de validación)
     // ================================================================
     var isLoading by remember { mutableStateOf(false) }
 

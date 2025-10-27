@@ -25,40 +25,40 @@ import com.example.tadpole_g4.model.User
 fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
 
     // -------------------------------------------------------------------
-    //  Variables del ViewModel
+    //  Variables del ViewModel: usuarios registrados y usuario logeado
     // -------------------------------------------------------------------
     val users = userViewModel.users
     val currentUser = userViewModel.currentUser
 
     // -------------------------------------------------------------------
-    //  Campos del formulario CRUD (persistentes)
+    //  Campos del formulario CRUD (persisten entre pestañas)
     // -------------------------------------------------------------------
     var username by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var editingUser by rememberSaveable { mutableStateOf<User?>(null) }
 
-    //  Mensaje de error
+    // Mensaje de error en validaciones
     var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
 
-    //  Estado de pestaña seleccionada en el menú inferior
+    // Control de pestaña activa en menú inferior
     var selectedTab by rememberSaveable { mutableStateOf(0) }
 
-    //  Usuario seleccionado para eliminar (null = sin selección)
+    // Usuario seleccionado temporalmente para eliminación
     var userToDelete by remember { mutableStateOf<User?>(null) }
 
     val scrollState = rememberScrollState()
 
     // -------------------------------------------------------------------
-    //  Estructura principal con barra superior + menú inferior
+    // ESTRUCTURA PRINCIPAL: AppBar superior + menú inferior
     // -------------------------------------------------------------------
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Hola, ${currentUser?.username ?: "Usuario"}") },
                 actions = {
+                    // Botón para cerrar sesión
                     TextButton(onClick = {
-                        // Limpia sesión y navega al login
                         userViewModel.clearLoginFields()
                         navController.navigate("login") {
                             popUpTo("home") { inclusive = true }
@@ -75,7 +75,7 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
         },
 
         // -------------------------------------------------------------------
-        //  MENÚ INFERIOR DE NAVEGACIÓN ENTRE SECCIONES
+        // Menú inferior de navegación
         // -------------------------------------------------------------------
         bottomBar = {
             NavigationBar {
@@ -101,13 +101,13 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
         }
     ) { padding ->
 
-        // ================================================================
-        // CONTENIDO VARIABLE SEGÚN LA PESTAÑA SELECCIONADA
-        // ================================================================
+        // -------------------------------------------------------------------
+        // CONTENIDO SEGÚN PESTAÑA ACTIVA
+        // -------------------------------------------------------------------
         when (selectedTab) {
 
             // ============================================================
-            // PESTAÑA 1: LISTA DE USUARIOS
+            // PESTAÑA 1: LISTADO DE USUARIOS (CRUD Visual)
             // ============================================================
             0 -> {
                 Column(
@@ -117,6 +117,7 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
                         .padding(padding)
                         .padding(horizontal = 16.dp, vertical = 24.dp)
                 ) {
+                    // Logo para Home UI
                     Image(
                         painter = painterResource(id = R.drawable.logo_home),
                         contentDescription = "Logo Home",
@@ -126,13 +127,10 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
                             .padding(bottom = 24.dp)
                     )
 
-                    Text(
-                        "Usuarios registrados",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Usuarios registrados", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(8.dp))
 
-                    // Lista de usuarios
+                    // Recorre y pinta la lista de usuarios
                     Column(modifier = Modifier.fillMaxWidth()) {
                         users.forEach { user ->
                             Card(
@@ -151,10 +149,9 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
                                         Text(user.username, style = MaterialTheme.typography.bodyLarge)
                                         Text(user.email, style = MaterialTheme.typography.bodySmall)
                                     }
+
                                     Row {
-                                        // ----------------------------------------------------------
-                                        // BOTÓN EDITAR: cambia a pestaña "Agregar" con datos cargados
-                                        // ----------------------------------------------------------
+                                        // Cargar datos del usuario para editar
                                         TextButton(onClick = {
                                             selectedTab = 1
                                             editingUser = user
@@ -165,13 +162,13 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
                                             Text("Editar")
                                         }
 
-                                        // ----------------------------------------------------------
-                                        // BOTÓN ELIMINAR: muestra diálogo de confirmación
-                                        // ----------------------------------------------------------
-                                        TextButton(onClick = {
-                                            userToDelete = user // Guarda el usuario a eliminar
-                                        }) {
-                                            Text("Eliminar")
+                                        // Nueva regla: ADMIN NO SE PUEDE ELIMINAR
+                                        if (user.username != "admin") {
+                                            TextButton(onClick = {
+                                                userToDelete = user
+                                            }) {
+                                                Text("Eliminar")
+                                            }
                                         }
                                     }
                                 }
@@ -180,16 +177,20 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
                     }
 
                     if (users.isEmpty()) {
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(Modifier.height(24.dp))
                         Text("No hay usuarios registrados aún.")
                     }
                 }
             }
 
             // ============================================================
-            // PESTAÑA 2: FORMULARIO CRUD (Agregar / Editar)
+            //  PESTAÑA 2: CRUD (Agregar o Editar)
             // ============================================================
             1 -> {
+
+                // Detecta si el usuario que estamos editando es admin
+                val isAdmin = editingUser?.username == "admin"
+
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -199,79 +200,89 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
 
+                    // Título dinámico: Agregar o Editar
                     Text(
                         if (editingUser != null) "Editar usuario" else "Agregar usuario",
                         style = MaterialTheme.typography.titleLarge
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(Modifier.height(16.dp))
 
+                    // Admin NO puede cambiar su username
                     OutlinedTextField(
                         value = username,
-                        onValueChange = { username = it; errorMessage = null },
+                        onValueChange = { if (!isAdmin) username = it },
                         label = { Text("Usuario") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isAdmin
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(Modifier.height(12.dp))
 
+                    // Admin NO puede cambiar su email
                     OutlinedTextField(
                         value = email,
-                        onValueChange = { email = it; errorMessage = null },
+                        onValueChange = { if (!isAdmin) email = it },
                         label = { Text("Email") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isAdmin
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(Modifier.height(12.dp))
 
+                    // El único dato editable SIEMPRE: contraseña
                     OutlinedTextField(
                         value = password,
-                        onValueChange = { password = it; errorMessage = null },
+                        onValueChange = { password = it },
                         label = { Text("Contraseña") },
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(Modifier.height(20.dp))
 
-                    // ----------------------------------------------------
-                    // BOTONES DE ACCIÓN (Guardar / Actualizar / Cancelar)
-                    // ----------------------------------------------------
+                    // Botones CRUD
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         Button(onClick = {
                             when {
-                                username.isBlank() -> errorMessage = "El nombre de usuario no puede estar vacío"
-                                email.isBlank() -> errorMessage = "El email no puede estar vacío"
-                                !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() ->
-                                    errorMessage = "El formato del email no es válido"
-                                password.isBlank() -> errorMessage = "La contraseña no puede estar vacía"
-                                password.length < 4 -> errorMessage = "Debe tener al menos 4 caracteres"
+                                password.isBlank() ->
+                                    errorMessage = "La contraseña no puede estar vacía"
+
+                                password.length < 4 ->
+                                    errorMessage = "Debe tener al menos 4 caracteres"
+
                                 else -> {
+                                    // Si es edición → actualiza
                                     if (editingUser != null) {
-                                        val updatedUser = editingUser!!.copy(
-                                            username = username,
-                                            email = email,
-                                            password = password
+                                        userViewModel.updateUser(
+                                            editingUser!!.copy(
+                                                username = username,
+                                                email = email,
+                                                password = password
+                                            )
                                         )
-                                        userViewModel.updateUser(updatedUser)
                                         editingUser = null
-                                    } else {
+                                    }
+                                    // Si es usuario nuevo → agregar normal
+                                    else {
                                         userViewModel.addUser(username, email, password)
                                     }
 
+                                    // Limpia formulario tras guardar
                                     username = ""
                                     email = ""
                                     password = ""
                                     errorMessage = null
-                                    selectedTab = 0 // Volver a la lista después de guardar
+                                    selectedTab = 0
                                 }
                             }
                         }) {
                             Text(if (editingUser != null) "Actualizar" else "Guardar")
                         }
 
+                        // Botón cancelar solo cuando se edita
                         if (editingUser != null) {
                             Button(onClick = {
                                 editingUser = null
@@ -285,11 +296,9 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
                         }
                     }
 
-                    // ----------------------------------------------------
-                    // MENSAJE DE ERROR
-                    // ----------------------------------------------------
+                    // Mensaje de error CRUD
                     errorMessage?.let {
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(Modifier.height(12.dp))
                         Text(
                             text = it,
                             color = MaterialTheme.colorScheme.error,
@@ -300,7 +309,7 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
             }
 
             // ============================================================
-            // PESTAÑA 3: CONFIGURACIÓN / PERFIL
+            // PESTAÑA 3: CONFIGURACIÓN (en desarrollo)
             // ============================================================
             2 -> {
                 Column(
@@ -311,20 +320,21 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text("Configuración", style = MaterialTheme.typography.titleLarge)
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(Modifier.height(16.dp))
                     Text("Aquí puedes agregar opciones del perfil, preferencias o temas.")
                 }
             }
         }
 
-        // ================================================================
-        // DIÁLOGO DE CONFIRMACIÓN PARA ELIMINAR USUARIO
-        // ================================================================
+        // -------------------------------------------------------------------
+        // DIÁLOGO DE CONFIRMACIÓN PARA ELIMINAR
+        // EXTRA: Prevención asegurada desde UI (admin nunca llega aquí)
+        // -------------------------------------------------------------------
         userToDelete?.let { user ->
             AlertDialog(
                 onDismissRequest = { userToDelete = null },
                 title = { Text("Confirmar eliminación") },
-                text = { Text("¿Seguro que deseas eliminar al usuario \"${user.username}\"?") },
+                text = { Text("¿Seguro que deseas eliminar a \"${user.username}\"?") },
                 confirmButton = {
                     TextButton(onClick = {
                         userViewModel.deleteUser(user)

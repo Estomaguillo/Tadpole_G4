@@ -14,7 +14,7 @@ import com.example.tadpole_g4.repository.UserRepository
 class UserViewModel : ViewModel() {
 
     // -------------------------------------------------------------------
-    // 🔹 CAMPOS DE LOGIN (Persisten al rotar la pantalla)
+    // CAMPOS DE LOGIN (Persisten al rotar la pantalla)
     // -------------------------------------------------------------------
 
     // Campo de nombre de usuario
@@ -51,7 +51,7 @@ class UserViewModel : ViewModel() {
     }
 
     // -------------------------------------------------------------------
-    // 🔹 GESTIÓN DE USUARIOS (CRUD y sesión actual)
+    // GESTIÓN DE USUARIOS (CRUD y sesión actual)
     // -------------------------------------------------------------------
 
     private val repository = UserRepository()
