@@ -21,35 +21,22 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import kotlinx.coroutines.delay
 
+/**
+ * Pantalla de Login con animación de carga y validación.
+ * Redirige a HomeScreen correspondiente según tipo de usuario.
+ */
 @Composable
 fun LoginScreen(
     userViewModel: UserViewModel,
-    onLoginSuccess: () -> Unit
+    onLoginSuccess: (String) -> Unit // "admin" o "user"
 ) {
-    // ================================================================
-    // ESTADOS OBSERVADOS DESDE EL VIEWMODEL
-    // ================================================================
     val username by userViewModel.username
     val password by userViewModel.password
 
-    // ================================================================
-    // CONTROL DE VISIBILIDAD DE CONTRASEÑA
-    // ================================================================
     var passwordVisible by remember { mutableStateOf(false) }
-
-    // ================================================================
-    // ESTADO PARA MENSAJES DE ERROR
-    // ================================================================
     var error by remember { mutableStateOf<String?>(null) }
-
-    // ================================================================
-    // NUEVO: ESTADO DE CARGA (animación de validación)
-    // ================================================================
     var isLoading by remember { mutableStateOf(false) }
 
-    // ================================================================
-    // SCROLL VERTICAL PARA AJUSTE EN PANTALLAS PEQUEÑAS
-    // ================================================================
     val scrollState = rememberScrollState()
 
     Box(
@@ -64,9 +51,7 @@ fun LoginScreen(
                 .padding(vertical = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // ================================================================
-            // LOGO SUPERIOR
-            // ================================================================
+            // Logo superior
             Image(
                 painter = painterResource(id = R.drawable.logo_login),
                 contentDescription = "Logo de inicio de sesión",
@@ -75,9 +60,7 @@ fun LoginScreen(
                     .padding(top = 32.dp, bottom = 48.dp)
             )
 
-            // ================================================================
-            // CAMPO DE USUARIO
-            // ================================================================
+            // Campo de usuario
             OutlinedTextField(
                 value = username,
                 onValueChange = {
@@ -92,9 +75,7 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ================================================================
-            // CAMPO DE CONTRASEÑA CON VISIBILIDAD CONTROLADA
-            // ================================================================
+            // Campo de contraseña
             OutlinedTextField(
                 value = password,
                 onValueChange = {
@@ -110,47 +91,37 @@ fun LoginScreen(
                 else
                     PasswordVisualTransformation(),
                 trailingIcon = {
-                    val image = if (passwordVisible)
-                        Icons.Filled.Visibility
-                    else
-                        Icons.Filled.VisibilityOff
-
-                    val description = if (passwordVisible)
-                        "Ocultar contraseña"
-                    else
-                        "Mostrar contraseña"
-
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(imageVector = image, contentDescription = description)
+                        Icon(
+                            imageVector = if (passwordVisible)
+                                Icons.Filled.Visibility
+                            else
+                                Icons.Filled.VisibilityOff,
+                            contentDescription = if (passwordVisible)
+                                "Ocultar contraseña"
+                            else
+                                "Mostrar contraseña"
+                        )
                     }
                 }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // ================================================================
-            // BOTÓN DE ACCESO
-            // ================================================================
+            // Botón de acceso
             Button(
                 onClick = {
                     when {
-                        username.isBlank() -> {
-                            error = "El campo de usuario no puede estar vacío"
-                        }
-                        password.isBlank() -> {
-                            error = "La contraseña no puede estar vacía"
-                        }
-                        password.length < 4 -> {
-                            error = "La contraseña debe tener al menos 4 caracteres"
-                        }
+                        username.isBlank() -> error = "El campo de usuario no puede estar vacío"
+                        password.isBlank() -> error = "La contraseña no puede estar vacía"
+                        password.length < 4 -> error = "La contraseña debe tener al menos 4 caracteres"
                         else -> {
-                            // 🔄 NUEVO: activar animación de carga durante 5 segundos
                             error = null
                             isLoading = true
                         }
                     }
                 },
-                enabled = !isLoading, // desactivar botón mientras carga
+                enabled = !isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp)
@@ -158,9 +129,7 @@ fun LoginScreen(
                 Text("Aceptar")
             }
 
-            // ================================================================
-            // 🔄 NUEVO: ANIMACIÓN DE CARGA BAJO EL BOTÓN (5 segundos)
-            // ================================================================
+            // Indicador de carga
             if (isLoading) {
                 Spacer(modifier = Modifier.height(20.dp))
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -169,22 +138,16 @@ fun LoginScreen(
                         strokeWidth = 4.dp
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Verificando credenciales...",
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                    Text("Verificando credenciales...")
                 }
             }
 
-            // ================================================================
-            // MENSAJE DE ERROR
-            // ================================================================
+            // Mensaje de error
             error?.let {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = it,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium
+                    color = MaterialTheme.colorScheme.error
                 )
             }
 
@@ -192,18 +155,17 @@ fun LoginScreen(
         }
     }
 
-    // ================================================================
-    //  EFECTO DE DEMORA (5 segundos de "validación")
-    // ================================================================
+    // Efecto de validación del login (simulación con delay)
     if (isLoading) {
         LaunchedEffect(Unit) {
-            delay(5000) // espera 5 segundos
-            val success = userViewModel.login(username, password)
+            delay(2000) // simulacion de 2 segundos
+
+            val result = userViewModel.login(username, password)
             isLoading = false
 
-            if (success) {
+            if (result == "admin" || result == "user") {
                 error = null
-                onLoginSuccess()
+                onLoginSuccess(result)
             } else {
                 error = "Usuario o contraseña incorrectos"
             }

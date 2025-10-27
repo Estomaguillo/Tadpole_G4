@@ -162,7 +162,7 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
                                             Text("Editar")
                                         }
 
-                                        // Nueva regla: ADMIN NO SE PUEDE ELIMINAR
+                                        // ADMIN NO SE PUEDE ELIMINAR
                                         if (user.username != "admin") {
                                             TextButton(onClick = {
                                                 userToDelete = user

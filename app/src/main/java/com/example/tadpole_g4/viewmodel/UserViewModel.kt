@@ -8,42 +8,32 @@ import com.example.tadpole_g4.repository.UserRepository
 
 /**
  * ViewModel que maneja la lógica de usuarios y el estado del login.
- * Se conserva en memoria mientras la app esté activa, lo que permite
- * mantener los datos al rotar la pantalla sin perderlos.
+ * Se conserva en memoria mientras la app esté activa, manteniendo
+ * los datos al rotar la pantalla sin perderlos.
  */
 class UserViewModel : ViewModel() {
 
     // -------------------------------------------------------------------
-    // CAMPOS DE LOGIN (Persisten al rotar la pantalla)
+    // CAMPOS DE LOGIN (Persisten al rotar pantalla gracias a Compose)
     // -------------------------------------------------------------------
 
-    // Campo de nombre de usuario
     var username = mutableStateOf("")
         private set
 
-    // Campo de contraseña
     var password = mutableStateOf("")
         private set
 
-    /**
-     * Actualiza el valor del campo de usuario
-     * Se llama desde el TextField del LoginScreen.
-     */
     fun onUsernameChange(newValue: String) {
         username.value = newValue
     }
 
-    /**
-     * Actualiza el valor del campo de contraseña
-     * Se llama desde el TextField del LoginScreen.
-     */
     fun onPasswordChange(newValue: String) {
         password.value = newValue
     }
 
     /**
      * Limpia los campos del login.
-     * Se usa cuando el usuario cierra sesión para reiniciar el formulario.
+     * Se usa cuando un usuario cierra sesión.
      */
     fun clearLoginFields() {
         username.value = ""
@@ -51,12 +41,12 @@ class UserViewModel : ViewModel() {
     }
 
     // -------------------------------------------------------------------
-    // GESTIÓN DE USUARIOS (CRUD y sesión actual)
+    // GESTIÓN DE USUARIOS (CRUD + manejo de sesión activa)
     // -------------------------------------------------------------------
 
     private val repository = UserRepository()
 
-    // Lista observable de usuarios que Compose escucha para refrescar la UI
+    // Lista de usuario
     var users = mutableStateListOf<User>()
         private set
 
@@ -64,52 +54,73 @@ class UserViewModel : ViewModel() {
     var currentUser: User? = null
 
     init {
-        // Inicializa la lista de usuarios con los datos del repositorio
+        // Inicializa usuarios desde el repositorio
         users.addAll(repository.getAllUsers())
-        currentUser = users.firstOrNull()
+        currentUser = null
     }
 
     /**
-     * Agrega un nuevo usuario al repositorio y actualiza la lista.
+     * Agrega un nuevo usuario.
+     * El administrador no puede ser creado nuevamente,
+     * y el username debe ser único.
      */
-    fun addUser(username: String, email: String, password: String) {
+    fun addUser(username: String, email: String, password: String): Boolean {
+        if (users.any { it.username == username }) return false
+
         val newUser = User(username = username, email = email, password = password)
         repository.addUser(newUser)
         refreshUsers()
+        return true
     }
 
     /**
-     * Actualiza la información de un usuario existente.
+     * Actualiza usuario.
+     * Restricciones:
+     * Admin solo puede actualizar SU contraseña
+     * Admin NO puede cambiar username ni email
      */
-    fun updateUser(user: User) {
-        repository.updateUser(user)
+    fun updateUser(user: User): Boolean {
+        if (user.username == "admin") {
+            val original = users.find { it.username == "admin" } ?: return false
+            val adminUpdated = original.copy(password = user.password)
+            repository.updateUser(adminUpdated)
+        } else {
+            repository.updateUser(user)
+        }
         refreshUsers()
+        return true
     }
 
     /**
-     * Elimina un usuario del repositorio y actualiza la lista.
+     * Elimina un usuario.
+     * No se permite eliminar al admin.
      */
-    fun deleteUser(user: User) {
+    fun deleteUser(user: User): Boolean {
+        if (user.username == "admin") return false
         repository.deleteUser(user)
         refreshUsers()
+        return true
     }
 
     /**
-     * Verifica las credenciales del usuario.
-     * Si son correctas, asigna el usuario actual.
-     * @return true si el login es válido, false en caso contrario.
+     * Verifica credenciales y asigna usuario actual si coincide.
+     * @return:
+     *  * "admin" → pantalla de administrador
+     *  * "user"  → pantalla de usuario normal
+     *  * null    → login incorrecto
      */
-    fun login(username: String, password: String): Boolean {
+    fun login(username: String, password: String): String? {
         val found = users.find { it.username == username && it.password == password }
-        return if (found != null) {
-            currentUser = found
-            true
-        } else false
+        currentUser = found
+        return when {
+            found == null -> null
+            found.username == "admin" -> "admin"
+            else -> "user"
+        }
     }
 
     /**
-     * Refresca la lista observable de usuarios.
-     * Se usa después de cualquier operación CRUD.
+     * Recarga lista de usuarios.
      */
     private fun refreshUsers() {
         users.clear()
