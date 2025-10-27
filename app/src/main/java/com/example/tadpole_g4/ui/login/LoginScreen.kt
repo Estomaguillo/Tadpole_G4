@@ -9,23 +9,33 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.KeyboardOptions
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.tadpole_g4.viewmodel.UserViewModel
 import com.example.tadpole_g4.R
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 
 @Composable
 fun LoginScreen(
     userViewModel: UserViewModel,
     onLoginSuccess: () -> Unit
 ) {
-    // Variables observadas desde el ViewModel
+    //  Estado observado desde el ViewModel
     val username by userViewModel.username
     val password by userViewModel.password
 
-    // Variable local para mostrar mensajes de error
+    //  Control de visibilidad de contraseña (mostrar/ocultar)
+    var passwordVisible by remember { mutableStateOf(false) }
+
+    //  Mensaje de error (si ocurre)
     var error by remember { mutableStateOf<String?>(null) }
 
-    // Scroll vertical para evitar recortes o solapamientos
+    //  Scroll vertical para pantallas pequeñas o en orientación horizontal
     val scrollState = rememberScrollState()
 
     Box(
@@ -40,7 +50,9 @@ fun LoginScreen(
                 .padding(vertical = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // ================================================================
             // LOGO SUPERIOR
+            // ================================================================
             Image(
                 painter = painterResource(id = R.drawable.logo_login),
                 contentDescription = "Logo de inicio de sesión",
@@ -49,20 +61,26 @@ fun LoginScreen(
                     .padding(top = 32.dp, bottom = 48.dp)
             )
 
-            // FORMULARIO DE LOGIN
+            // ================================================================
+            // CAMPO DE USUARIO
+            // ================================================================
             OutlinedTextField(
                 value = username,
                 onValueChange = {
                     userViewModel.onUsernameChange(it)
-                    error = null
+                    error = null // Limpiar error al modificar
                 },
                 label = { Text("Usuario") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // ================================================================
+            // CAMPO DE CONTRASEÑA CON VISIBILIDAD CONTROLADA
+            // ================================================================
             OutlinedTextField(
                 value = password,
                 onValueChange = {
@@ -71,12 +89,36 @@ fun LoginScreen(
                 },
                 label = { Text("Contraseña") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                visualTransformation = if (passwordVisible)
+                    VisualTransformation.None
+                else
+                    PasswordVisualTransformation(),
+
+                // Icono de mostrar/ocultar contraseña
+                trailingIcon = {
+                    val image = if (passwordVisible)
+                        Icons.Filled.Visibility
+                    else
+                        Icons.Filled.VisibilityOff
+
+                    val description = if (passwordVisible)
+                        "Ocultar contraseña"
+                    else
+                        "Mostrar contraseña"
+
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(imageVector = image, contentDescription = description)
+                    }
+                }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // ================================================================
             // BOTÓN DE ACCESO
+            // ================================================================
             Button(
                 onClick = {
                     when {
@@ -106,7 +148,9 @@ fun LoginScreen(
                 Text("Aceptar")
             }
 
+            // ================================================================
             // MENSAJE DE ERROR
+            // ================================================================
             error?.let {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
@@ -120,5 +164,3 @@ fun LoginScreen(
         }
     }
 }
-
-

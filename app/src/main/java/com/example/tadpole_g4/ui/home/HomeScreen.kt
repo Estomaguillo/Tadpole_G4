@@ -20,22 +20,29 @@ import com.example.tadpole_g4.model.User
 @Composable
 fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
 
-    // Variables principales del ViewModel
+    // -------------------------------------------------------------------
+    // 🔹 VARIABLES PRINCIPALES DEL VIEWMODEL
+    // -------------------------------------------------------------------
     val users = userViewModel.users
     val currentUser = userViewModel.currentUser
 
-    // Campos del formulario (persisten al girar)
+    // -------------------------------------------------------------------
+    // 🔹 CAMPOS DEL FORMULARIO (Se mantienen al rotar la pantalla)
+    // -------------------------------------------------------------------
     var username by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var editingUser by rememberSaveable { mutableStateOf<User?>(null) }
 
-    // Mensaje de error (también persistente)
+    // 🔹 Mensaje de error (también persistente)
     var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
 
-    // Scroll vertical
+    // 🔹 Scroll para pantallas pequeñas o modo horizontal
     val scrollState = rememberScrollState()
 
+    // -------------------------------------------------------------------
+    // 🔹 INTERFAZ PRINCIPAL
+    // -------------------------------------------------------------------
     Scaffold(
         topBar = {
             TopAppBar(
@@ -43,8 +50,12 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
                     Text("Hola, ${currentUser?.username ?: "Usuario"}")
                 },
                 actions = {
+                    // BOTÓN CERRAR SESIÓN
                     TextButton(onClick = {
-                        // Cerrar sesión y limpiar pila de navegación
+                        // Limpiar los campos del login
+                        userViewModel.clearLoginFields()
+
+                        // Navegar al Login y limpiar la pila de navegación
                         navController.navigate("login") {
                             popUpTo("home") { inclusive = true }
                         }
@@ -62,7 +73,10 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
             )
         }
     ) { padding ->
-        // Contenido desplazable
+
+        // -------------------------------------------------------------------
+        // 🔹 CONTENIDO PRINCIPAL CON SCROLL
+        // -------------------------------------------------------------------
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -71,7 +85,10 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
                 .padding(horizontal = 16.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // LOGO HOME
+
+            // -------------------------------------------------------------------
+            // 🔹 LOGO HOME
+            // -------------------------------------------------------------------
             Image(
                 painter = painterResource(id = R.drawable.logo_home),
                 contentDescription = "Logo Home",
@@ -80,12 +97,14 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
                     .padding(bottom = 32.dp)
             )
 
-            // FORMULARIO CRUD
+            // -------------------------------------------------------------------
+            // 🔹 FORMULARIO CRUD DE USUARIOS
+            // -------------------------------------------------------------------
             OutlinedTextField(
                 value = username,
                 onValueChange = {
                     username = it
-                    errorMessage = null
+                    errorMessage = null // Limpia error al escribir
                 },
                 label = { Text("Usuario") },
                 modifier = Modifier.fillMaxWidth()
@@ -117,12 +136,15 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // BOTONES DE ACCIÓN
+            // -------------------------------------------------------------------
+            // 🔹 BOTONES DE ACCIÓN (Agregar / Actualizar / Cancelar)
+            // -------------------------------------------------------------------
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 Button(onClick = {
+                    // Validaciones antes de agregar o actualizar
                     when {
                         username.isBlank() -> errorMessage = "El nombre de usuario no puede estar vacío"
                         email.isBlank() -> errorMessage = "El email no puede estar vacío"
@@ -132,6 +154,7 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
                         password.length < 4 -> errorMessage = "La contraseña debe tener al menos 4 caracteres"
                         else -> {
                             if (editingUser != null) {
+                                // Actualizar usuario existente
                                 val updatedUser = editingUser!!.copy(
                                     username = username,
                                     email = email,
@@ -140,9 +163,11 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
                                 userViewModel.updateUser(updatedUser)
                                 editingUser = null
                             } else {
+                                // Agregar nuevo usuario
                                 userViewModel.addUser(username, email, password)
                             }
 
+                            // Limpiar campos después de guardar
                             username = ""
                             email = ""
                             password = ""
@@ -153,6 +178,7 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
                     Text(if (editingUser != null) "Actualizar" else "Agregar")
                 }
 
+                // Botón cancelar visible solo en modo edición
                 if (editingUser != null) {
                     Button(onClick = {
                         editingUser = null
@@ -166,7 +192,9 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
                 }
             }
 
-            // MENSAJE DE ERROR
+            // -------------------------------------------------------------------
+            // 🔹 MENSAJE DE ERROR DE VALIDACIÓN
+            // -------------------------------------------------------------------
             errorMessage?.let {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
@@ -178,7 +206,9 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // LISTA DE USUARIOS
+            // -------------------------------------------------------------------
+            // 🔹 LISTA DE USUARIOS REGISTRADOS
+            // -------------------------------------------------------------------
             Text("Lista de usuarios", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -201,6 +231,7 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
                                 Text(user.email, style = MaterialTheme.typography.bodySmall)
                             }
                             Row {
+                                // Botón Editar
                                 TextButton(onClick = {
                                     editingUser = user
                                     username = user.username
@@ -210,6 +241,8 @@ fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
                                 }) {
                                     Text("Editar")
                                 }
+
+                                // Botón Eliminar
                                 TextButton(onClick = {
                                     userViewModel.deleteUser(user)
                                 }) {
