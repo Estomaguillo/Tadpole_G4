@@ -9,7 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.input.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.input.KeyboardType
@@ -25,17 +25,26 @@ fun LoginScreen(
     userViewModel: UserViewModel,
     onLoginSuccess: () -> Unit
 ) {
-    //  Estado observado desde el ViewModel
+    // ================================================================
+    // ESTADOS OBSERVADOS DESDE EL VIEWMODEL
+    // ================================================================
     val username by userViewModel.username
     val password by userViewModel.password
 
-    //  Control de visibilidad de contraseña (mostrar/ocultar)
+    // ================================================================
+    // CONTROL DE VISIBILIDAD DE CONTRASEÑA
+    // (permite mostrar/ocultar los caracteres)
+    // ================================================================
     var passwordVisible by remember { mutableStateOf(false) }
 
-    //  Mensaje de error (si ocurre)
+    // ================================================================
+    // ESTADO PARA MENSAJES DE ERROR
+    // ================================================================
     var error by remember { mutableStateOf<String?>(null) }
 
-    //  Scroll vertical para pantallas pequeñas o en orientación horizontal
+    // ================================================================
+    // SCROLL VERTICAL PARA AJUSTE EN PANTALLAS PEQUEÑAS
+    // ================================================================
     val scrollState = rememberScrollState()
 
     Box(
@@ -68,7 +77,7 @@ fun LoginScreen(
                 value = username,
                 onValueChange = {
                     userViewModel.onUsernameChange(it)
-                    error = null // Limpiar error al modificar
+                    error = null // Limpiar error al escribir
                 },
                 label = { Text("Usuario") },
                 modifier = Modifier.fillMaxWidth(),
@@ -85,18 +94,22 @@ fun LoginScreen(
                 value = password,
                 onValueChange = {
                     userViewModel.onPasswordChange(it)
-                    error = null
+                    error = null // Limpiar error al escribir
                 },
                 label = { Text("Contraseña") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
+                // Forzar teclado tipo contraseña
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                // Oculta los caracteres salvo que passwordVisible = true
                 visualTransformation = if (passwordVisible)
                     VisualTransformation.None
                 else
                     PasswordVisualTransformation(),
 
-                // Icono de mostrar/ocultar contraseña
+                // ================================================================
+                // ÍCONO DE MOSTRAR / OCULTAR CONTRASEÑA
+                // ================================================================
                 trailingIcon = {
                     val image = if (passwordVisible)
                         Icons.Filled.Visibility
@@ -132,6 +145,7 @@ fun LoginScreen(
                             error = "La contraseña debe tener al menos 4 caracteres"
                         }
                         else -> {
+                            // Intento de inicio de sesión a través del ViewModel
                             if (userViewModel.login(username, password)) {
                                 error = null
                                 onLoginSuccess()
@@ -149,7 +163,7 @@ fun LoginScreen(
             }
 
             // ================================================================
-            // MENSAJE DE ERROR
+            // MENSAJE DE ERROR (SI EXISTE)
             // ================================================================
             error?.let {
                 Spacer(modifier = Modifier.height(12.dp))

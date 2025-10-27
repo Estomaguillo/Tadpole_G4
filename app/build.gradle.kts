@@ -10,23 +10,21 @@ plugins {
 }
 
 android {
-    namespace = "com.example.tadpole_g4" // Nombre de tu paquete
-    compileSdk = 36 // SDK con el que compila la app
+    namespace = "com.example.tadpole_g4"
+    compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.tadpole_g4" // ID único del paquete
-        minSdk = 24 // Mínimo SDK soportado (Android 7.0)
-        targetSdk = 36 // SDK objetivo
+        applicationId = "com.example.tadpole_g4"
+        minSdk = 24
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
-        // Runner para pruebas instrumentadas
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            // Desactiva la minificación (útil durante desarrollo)
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -35,7 +33,6 @@ android {
         }
     }
 
-    // Configuración de compatibilidad con Java 17 (recomendado para Compose)
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -50,12 +47,11 @@ android {
         compose = true
     }
 
-    // Versión del compilador de Compose
+    // Versión recomendada del compilador Compose
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.3"
     }
 
-    // Excluir licencias duplicadas al empaquetar
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -73,46 +69,56 @@ dependencies {
     implementation(libs.androidx.activity.compose)
 
     // ============================================================
-    // JETPACK COMPOSE (usando BOM para mantener versiones alineadas)
+    // JETPACK COMPOSE USANDO BOM (Versiones alineadas)
     // ============================================================
-    implementation(platform("androidx.compose:compose-bom:2024.10.00"))
-
-    // Librerías base de Compose
+    //implementation(platform("androidx.compose:compose-bom:2024.10.00"))
+    implementation(platform(libs.androidx.compose.bom))
+    
+    // UI Base de Compose
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
 
-    // Material 3 (interfaz moderna de Android)
+    // Material 3 moderno
     implementation("androidx.compose.material3:material3")
 
     // ============================================================
-    // ESTADO Y GUARDADO DE DATOS EN COMPOSE
-    // Permite usar `rememberSaveable` para conservar datos al rotar pantalla
+    // Corrección importante — Inputs de texto + teclado
+    // Necesario para: KeyboardOptions, PasswordTransformation, etc
+    // ============================================================
+    implementation("androidx.compose.ui:ui-text")
+    // Forzar versión explícita (resuelve el "unresolved reference")
+    //implementation("androidx.compose.ui:ui-text:1.5.3")
+
+
+    // ============================================================
+    // Control del estado guardado (rotación, cambio de tamaño)
     // ============================================================
     implementation("androidx.compose.runtime:runtime-saveable")
 
     // ============================================================
-    // ICONOS Y COMPONENTES VISUALES
-    // Incluye íconos por defecto como Visibility/VisibilityOff
+    // Íconos Material (Visibility / VisibilityOff, etc.)
     // ============================================================
     implementation("androidx.compose.material:material-icons-core")
     implementation("androidx.compose.material:material-icons-extended")
 
     // ============================================================
-    // NAVEGACIÓN ENTRE PANTALLAS EN COMPOSE
+    // Navegación entre pantallas
     // ============================================================
     implementation("androidx.navigation:navigation-compose:2.8.2")
 
     // ============================================================
-    // CICLO DE VIDA Y COMPATIBILIDAD CON COMPOSE
+    // Integración ciclo vida + Compose
     // ============================================================
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
 
-    // Soporte de input y teclado
+    // ============================================================
+    // Para Scroll View, Box, Column, etc.
+    // ============================================================
     implementation("androidx.compose.foundation:foundation")
 
     // ============================================================
-    // DEPENDENCIAS PARA PRUEBAS
+    // DEPENDENCIAS DE TESTING
     // ============================================================
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -121,7 +127,7 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 
     // ============================================================
-    // HERRAMIENTAS DE DEPURACIÓN Y PREVISUALIZACIÓN
+    // DEPURACIÓN Y PREVISUALIZACIÓN
     // ============================================================
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
