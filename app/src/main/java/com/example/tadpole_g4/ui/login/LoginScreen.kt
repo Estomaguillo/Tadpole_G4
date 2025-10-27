@@ -19,6 +19,7 @@ import com.example.tadpole_g4.R
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import kotlinx.coroutines.delay
 
 @Composable
 fun LoginScreen(
@@ -33,7 +34,6 @@ fun LoginScreen(
 
     // ================================================================
     // CONTROL DE VISIBILIDAD DE CONTRASEÑA
-    // (permite mostrar/ocultar los caracteres)
     // ================================================================
     var passwordVisible by remember { mutableStateOf(false) }
 
@@ -41,6 +41,11 @@ fun LoginScreen(
     // ESTADO PARA MENSAJES DE ERROR
     // ================================================================
     var error by remember { mutableStateOf<String?>(null) }
+
+    // ================================================================
+    // 🔄 NUEVO: ESTADO DE CARGA (animación de validación)
+    // ================================================================
+    var isLoading by remember { mutableStateOf(false) }
 
     // ================================================================
     // SCROLL VERTICAL PARA AJUSTE EN PANTALLAS PEQUEÑAS
@@ -77,7 +82,7 @@ fun LoginScreen(
                 value = username,
                 onValueChange = {
                     userViewModel.onUsernameChange(it)
-                    error = null // Limpiar error al escribir
+                    error = null
                 },
                 label = { Text("Usuario") },
                 modifier = Modifier.fillMaxWidth(),
@@ -94,22 +99,16 @@ fun LoginScreen(
                 value = password,
                 onValueChange = {
                     userViewModel.onPasswordChange(it)
-                    error = null // Limpiar error al escribir
+                    error = null
                 },
                 label = { Text("Contraseña") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                // Forzar teclado tipo contraseña
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                // Oculta los caracteres salvo que passwordVisible = true
                 visualTransformation = if (passwordVisible)
                     VisualTransformation.None
                 else
                     PasswordVisualTransformation(),
-
-                // ================================================================
-                // ÍCONO DE MOSTRAR / OCULTAR CONTRASEÑA
-                // ================================================================
                 trailingIcon = {
                     val image = if (passwordVisible)
                         Icons.Filled.Visibility
@@ -145,16 +144,13 @@ fun LoginScreen(
                             error = "La contraseña debe tener al menos 4 caracteres"
                         }
                         else -> {
-                            // Intento de inicio de sesión a través del ViewModel
-                            if (userViewModel.login(username, password)) {
-                                error = null
-                                onLoginSuccess()
-                            } else {
-                                error = "Usuario o contraseña incorrectos"
-                            }
+                            // 🔄 NUEVO: activar animación de carga durante 5 segundos
+                            error = null
+                            isLoading = true
                         }
                     }
                 },
+                enabled = !isLoading, // desactivar botón mientras carga
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp)
@@ -163,7 +159,25 @@ fun LoginScreen(
             }
 
             // ================================================================
-            // MENSAJE DE ERROR (SI EXISTE)
+            // 🔄 NUEVO: ANIMACIÓN DE CARGA BAJO EL BOTÓN (5 segundos)
+            // ================================================================
+            if (isLoading) {
+                Spacer(modifier = Modifier.height(20.dp))
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(40.dp),
+                        strokeWidth = 4.dp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Verificando credenciales...",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+
+            // ================================================================
+            // MENSAJE DE ERROR
             // ================================================================
             error?.let {
                 Spacer(modifier = Modifier.height(12.dp))
@@ -175,6 +189,24 @@ fun LoginScreen(
             }
 
             Spacer(modifier = Modifier.height(60.dp))
+        }
+    }
+
+    // ================================================================
+    //  EFECTO DE DEMORA (5 segundos de "validación")
+    // ================================================================
+    if (isLoading) {
+        LaunchedEffect(Unit) {
+            delay(5000) // espera 5 segundos
+            val success = userViewModel.login(username, password)
+            isLoading = false
+
+            if (success) {
+                error = null
+                onLoginSuccess()
+            } else {
+                error = "Usuario o contraseña incorrectos"
+            }
         }
     }
 }
