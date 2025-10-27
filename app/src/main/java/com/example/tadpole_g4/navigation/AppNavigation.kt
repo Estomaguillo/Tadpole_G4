@@ -8,6 +8,7 @@ import com.example.tadpole_g4.ui.home.HomeScreen
 import com.example.tadpole_g4.ui.login.LoginScreen
 import com.example.tadpole_g4.viewmodel.UserViewModel
 
+// Rutas de navegación
 sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Home : Screen("home")
@@ -22,7 +23,7 @@ fun AppNavigation(
         navController = navController,
         startDestination = Screen.Login.route
     ) {
-        //Pantalla de Login
+        // Pantalla de Login
         composable(Screen.Login.route) {
             LoginScreen(
                 userViewModel = userViewModel,
@@ -36,7 +37,10 @@ fun AppNavigation(
 
         // Pantalla Home (CRUD)
         composable(Screen.Home.route) {
-            HomeScreen(userViewModel = userViewModel)
+            HomeScreen(
+                userViewModel = userViewModel,
+                navController = navController // ahora pasamos el controlador al Home
+            )
         }
     }
 }

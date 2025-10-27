@@ -10,15 +10,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.example.tadpole_g4.viewmodel.UserViewModel
 import com.example.tadpole_g4.R
 import com.example.tadpole_g4.model.User
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(userViewModel: UserViewModel) {
+fun HomeScreen(userViewModel: UserViewModel, navController: NavController) {
 
-    // Todas las variables deben ir dentro del Composable
+
+    // VARIABLES PRINCIPALES
+
     val users = userViewModel.users
     val currentUser = userViewModel.currentUser
 
@@ -27,12 +30,33 @@ fun HomeScreen(userViewModel: UserViewModel) {
     var password by remember { mutableStateOf("") }
     var editingUser by remember { mutableStateOf<User?>(null) }
 
+    // variable de error para mostrar mensajes de validación
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text("Hola, ${currentUser?.username ?: "Usuario"}")
-                }
+                },
+                actions = {
+                    //Botón para cerrar sesión
+                    TextButton(onClick = {
+                        // Navegar al Login y limpiar la pila para evitar volver atrás
+                        navController.navigate("login") {
+                            popUpTo("home") { inclusive = true }
+                        }
+                    }) {
+                        Text(
+                            "Cerrar sesión",
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.mediumTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                )
             )
         }
     ) { padding ->
@@ -43,7 +67,7 @@ fun HomeScreen(userViewModel: UserViewModel) {
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // LOGO HOME
+            //LOGO HOME
             Image(
                 painter = painterResource(id = R.drawable.logo_home),
                 contentDescription = "Logo Home",
@@ -52,10 +76,13 @@ fun HomeScreen(userViewModel: UserViewModel) {
                     .padding(bottom = 24.dp)
             )
 
-            // Formulario CRUD
+            // FORMULARIO CRUD
             OutlinedTextField(
                 value = username,
-                onValueChange = { username = it },
+                onValueChange = {
+                    username = it
+                    errorMessage = null // limpiar error al escribir
+                },
                 label = { Text("Usuario") },
                 modifier = Modifier.fillMaxWidth()
             )
@@ -64,7 +91,10 @@ fun HomeScreen(userViewModel: UserViewModel) {
 
             OutlinedTextField(
                 value = email,
-                onValueChange = { email = it },
+                onValueChange = {
+                    email = it
+                    errorMessage = null //limpiar error al escribir
+                },
                 label = { Text("Email") },
                 modifier = Modifier.fillMaxWidth()
             )
@@ -73,52 +103,95 @@ fun HomeScreen(userViewModel: UserViewModel) {
 
             OutlinedTextField(
                 value = password,
-                onValueChange = { password = it },
+                onValueChange = {
+                    password = it
+                    errorMessage = null // limpiar error al escribir
+                },
                 label = { Text("Contraseña") },
                 modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Botones de acción
+
+            //BOTONES DE ACCIÓN (CON VALIDACIÓN)
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 Button(onClick = {
-                    if (editingUser != null) {
-                        val updatedUser = editingUser!!.copy(
-                            username = username,
-                            email = email,
-                            password = password
-                        )
-                        userViewModel.updateUser(updatedUser)
-                        editingUser = null
-                    } else {
-                        userViewModel.addUser(username, email, password)
+                    // Validaciones antes de agregar/actualizar
+                    when {
+                        username.isBlank() -> {
+                            errorMessage = "El nombre de usuario no puede estar vacío"
+                        }
+                        email.isBlank() -> {
+                            errorMessage = "El email no puede estar vacío"
+                        }
+                        !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> {
+                            errorMessage = "El formato del email no es válido"
+                        }
+                        password.isBlank() -> {
+                            errorMessage = "La contraseña no puede estar vacía"
+                        }
+                        password.length < 4 -> {
+                            errorMessage = "La contraseña debe tener al menos 4 caracteres"
+                        }
+                        else -> {
+                            //  agregar o actualizar usuario
+                            if (editingUser != null) {
+                                val updatedUser = editingUser!!.copy(
+                                    username = username,
+                                    email = email,
+                                    password = password
+                                )
+                                userViewModel.updateUser(updatedUser)
+                                editingUser = null
+                            } else {
+                                userViewModel.addUser(username, email, password)
+                            }
+
+                            //limpiar campos al guardar
+                            username = ""
+                            email = ""
+                            password = ""
+                            errorMessage = null
+                        }
                     }
-                    username = ""
-                    email = ""
-                    password = ""
                 }) {
                     Text(if (editingUser != null) "Actualizar" else "Agregar")
                 }
 
                 if (editingUser != null) {
                     Button(onClick = {
+                        //cancelar edición
                         editingUser = null
                         username = ""
                         email = ""
                         password = ""
+                        errorMessage = null
                     }) {
                         Text("Cancelar")
                     }
                 }
             }
 
+            //  Mostrar mensaje de error de validación
+            errorMessage?.let {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = it,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Lista de usuarios
+
+            // LISTA DE USUARIOS
+
             Text("Lista de usuarios", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -141,14 +214,17 @@ fun HomeScreen(userViewModel: UserViewModel) {
                                 Text(user.email, style = MaterialTheme.typography.bodySmall)
                             }
                             Row {
+                                // Botón editar
                                 TextButton(onClick = {
                                     editingUser = user
                                     username = user.username
                                     email = user.email
                                     password = user.password
+                                    errorMessage = null
                                 }) {
                                     Text("Editar")
                                 }
+                                //Botón eliminar
                                 TextButton(onClick = { userViewModel.deleteUser(user) }) {
                                     Text("Eliminar")
                                 }

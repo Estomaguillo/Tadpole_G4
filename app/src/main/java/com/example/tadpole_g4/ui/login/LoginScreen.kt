@@ -16,17 +16,22 @@ fun LoginScreen(
     userViewModel: UserViewModel,
     onLoginSuccess: () -> Unit
 ) {
+
+    // VARIABLES
+
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
+    //variable para mostrar mensajes de error de validación
     var error by remember { mutableStateOf<String?>(null) }
 
-    // Estructura general
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp)
     ) {
-        // 🖼️ LOGO FIJO ARRIBA
+        //LOGO FIJO ARRIBA
         Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -42,37 +47,66 @@ fun LoginScreen(
             )
         }
 
-        // 📋 FORMULARIO CENTRADO VERTICALMENTE EN LA PANTALLA
+        // FORMULARIO CENTRADO
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Campo usuario
             OutlinedTextField(
                 value = username,
-                onValueChange = { username = it },
+                onValueChange = {
+                    username = it
+                    error = null // limpiar error al escribir
+                },
                 label = { Text("Usuario") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            // Campo contraseña
             OutlinedTextField(
                 value = password,
-                onValueChange = { password = it },
+                onValueChange = {
+                    password = it
+                    error = null // 💬 NUEVO: limpiar error al escribir
+                },
                 label = { Text("Contraseña") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
+
+            // BOTÓN DE ACCESO CON VALIDACIONES
+
             Button(
                 onClick = {
-                    if (userViewModel.login(username, password)) {
-                        onLoginSuccess()
-                    } else {
-                        error = "Usuario o contraseña incorrectos"
+                    // Validaciones antes de intentar el login
+                    when {
+                        username.isBlank() -> {
+                            error = "El campo de usuario no puede estar vacío"
+                        }
+                        password.isBlank() -> {
+                            error = "La contraseña no puede estar vacía"
+                        }
+                        password.length < 4 -> {
+                            error = "La contraseña debe tener al menos 4 caracteres"
+                        }
+                        else -> {
+                            // Intentar login solo si pasa validaciones
+                            if (userViewModel.login(username, password)) {
+                                error = null
+                                onLoginSuccess()
+                            } else {
+                                error = "Usuario o contraseña incorrectos"
+                            }
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -80,9 +114,14 @@ fun LoginScreen(
                 Text("Aceptar")
             }
 
+            // Mostrar mensaje de error si existe
             error?.let {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(it, color = MaterialTheme.colorScheme.error)
+                Text(
+                    text = it,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
         }
     }
