@@ -21,14 +21,10 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import kotlinx.coroutines.delay
 
-/**
- * Pantalla de Login con animación de carga y validación.
- * Redirige a HomeScreen correspondiente según tipo de usuario.
- */
 @Composable
 fun LoginScreen(
     userViewModel: UserViewModel,
-    onLoginSuccess: (String) -> Unit // "admin" o "user"
+    onLoginSuccess: (String) -> Unit
 ) {
     val username by userViewModel.username
     val password by userViewModel.password
@@ -51,31 +47,29 @@ fun LoginScreen(
                 .padding(vertical = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Logo superior
+
             Image(
                 painter = painterResource(id = R.drawable.logo_login),
-                contentDescription = "Logo de inicio de sesión",
+                contentDescription = "Logo de inicio",
                 modifier = Modifier
                     .size(220.dp)
                     .padding(top = 32.dp, bottom = 48.dp)
             )
 
-            // Campo de usuario
             OutlinedTextField(
                 value = username,
                 onValueChange = {
                     userViewModel.onUsernameChange(it)
                     error = null
                 },
-                label = { Text("Usuario") },
+                label = { Text("Usuario (RUT)") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Campo de contraseña
             OutlinedTextField(
                 value = password,
                 onValueChange = {
@@ -93,14 +87,9 @@ fun LoginScreen(
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
-                            imageVector = if (passwordVisible)
-                                Icons.Filled.Visibility
-                            else
-                                Icons.Filled.VisibilityOff,
-                            contentDescription = if (passwordVisible)
-                                "Ocultar contraseña"
-                            else
-                                "Mostrar contraseña"
+                            imageVector = if (passwordVisible) Icons.Filled.Visibility
+                            else Icons.Filled.VisibilityOff,
+                            contentDescription = null
                         )
                     }
                 }
@@ -108,13 +97,11 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Botón de acceso
             Button(
                 onClick = {
                     when {
-                        username.isBlank() -> error = "El campo de usuario no puede estar vacío"
-                        password.isBlank() -> error = "La contraseña no puede estar vacía"
-                        password.length < 4 -> error = "La contraseña debe tener al menos 4 caracteres"
+                        username.isBlank() -> error = "Debe ingresar un usuario"
+                        password.isBlank() -> error = "Debe ingresar una contraseña"
                         else -> {
                             error = null
                             isLoading = true
@@ -129,7 +116,6 @@ fun LoginScreen(
                 Text("Aceptar")
             }
 
-            // Indicador de carga
             if (isLoading) {
                 Spacer(modifier = Modifier.height(20.dp))
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -142,29 +128,27 @@ fun LoginScreen(
                 }
             }
 
-            // Mensaje de error
             error?.let {
                 Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = it,
-                    color = MaterialTheme.colorScheme.error
-                )
+                Text(text = it, color = MaterialTheme.colorScheme.error)
             }
 
             Spacer(modifier = Modifier.height(60.dp))
         }
     }
 
-    // Efecto de validación del login (simulación con delay)
     if (isLoading) {
         LaunchedEffect(Unit) {
-            delay(2000) // simulacion de 2 segundos
+            delay(1200)
 
-            val result = userViewModel.login(username, password)
+            val result = userViewModel.login(
+                rutStr = username,
+                pass = password
+            )
+
             isLoading = false
 
             if (result == "admin" || result == "user") {
-                error = null
                 onLoginSuccess(result)
             } else {
                 error = "Usuario o contraseña incorrectos"

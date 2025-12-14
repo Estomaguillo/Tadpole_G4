@@ -3,20 +3,21 @@ package com.example.tadpole_g4.viewmodel
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
-import com.example.tadpole_g4.model.User
+import androidx.lifecycle.viewModelScope
+import com.example.tadpole_g4.data.entity.UsuarioEntity
 import com.example.tadpole_g4.repository.UserRepository
+import kotlinx.coroutines.launch
 
 /**
- * ViewModel que maneja la lógica de usuarios y el estado del login.
- * Se conserva en memoria mientras la app esté activa, manteniendo
- * los datos al rotar la pantalla sin perderlos.
+ * ViewModel conectado a Room usando UserRepository.
  */
-class UserViewModel : ViewModel() {
+class UserViewModel(
+    private val repository: UserRepository
+) : ViewModel() {
 
-    // -------------------------------------------------------------------
-    // CAMPOS DE LOGIN (Persisten al rotar pantalla gracias a Compose)
-    // -------------------------------------------------------------------
-
+    // --------------------------------------------
+    // CAMPOS DEL LOGIN
+    // --------------------------------------------
     var username = mutableStateOf("")
         private set
 
@@ -31,99 +32,80 @@ class UserViewModel : ViewModel() {
         password.value = newValue
     }
 
-    /**
-     * Limpia los campos del login.
-     * Se usa cuando un usuario cierra sesión.
-     */
     fun clearLoginFields() {
         username.value = ""
         password.value = ""
     }
 
-    // -------------------------------------------------------------------
-    // GESTIÓN DE USUARIOS (CRUD + manejo de sesión activa)
-    // -------------------------------------------------------------------
-
-    private val repository = UserRepository()
-
-    // Lista de usuario
-    var users = mutableStateListOf<User>()
+    // --------------------------------------------
+    // LISTA DE USUARIOS (Room)
+    // --------------------------------------------
+    var users = mutableStateListOf<UsuarioEntity>()
         private set
 
-    // Usuario actualmente autenticado
-    var currentUser: User? = null
+    var currentUser: UsuarioEntity? = null
 
     init {
-        // Inicializa usuarios desde el repositorio
-        users.addAll(repository.getAllUsers())
-        currentUser = null
+        loadUsers()
     }
 
     /**
-     * Agrega un nuevo usuario.
-     * El administrador no puede ser creado nuevamente,
-     * y el username debe ser único.
+     * Carga usuarios desde la base de datos Room.
      */
-    fun addUser(username: String, email: String, password: String): Boolean {
-        if (users.any { it.username == username }) return false
-
-        val newUser = User(username = username, email = email, password = password)
-        repository.addUser(newUser)
-        refreshUsers()
-        return true
-    }
-
-    /**
-     * Actualiza usuario.
-     * Restricciones:
-     * Admin solo puede actualizar SU contraseña
-     * Admin NO puede cambiar username ni email
-     */
-    fun updateUser(user: User): Boolean {
-        if (user.username == "admin") {
-            val original = users.find { it.username == "admin" } ?: return false
-            val adminUpdated = original.copy(password = user.password)
-            repository.updateUser(adminUpdated)
-        } else {
-            repository.updateUser(user)
+    private fun loadUsers() {
+        viewModelScope.launch {
+            users.clear()
+            users.addAll(repository.getAllUsers())
         }
-        refreshUsers()
-        return true
+    }
+
+    /**
+     * Agrega un usuario a Room.
+     */
+    fun addUser(usuario: UsuarioEntity) {
+        viewModelScope.launch {
+            repository.addUser(usuario)
+            loadUsers()
+        }
+    }
+
+    /**
+     * Actualiza un usuario.
+     */
+    fun updateUser(usuario: UsuarioEntity) {
+        viewModelScope.launch {
+            repository.updateUser(usuario)
+            loadUsers()
+        }
     }
 
     /**
      * Elimina un usuario.
-     * No se permite eliminar al admin.
      */
-    fun deleteUser(user: User): Boolean {
-        if (user.username == "admin") return false
-        repository.deleteUser(user)
-        refreshUsers()
-        return true
-    }
-
-    /**
-     * Verifica credenciales y asigna usuario actual si coincide.
-     * @return:
-     *  * "admin" → pantalla de administrador
-     *  * "user"  → pantalla de usuario normal
-     *  * null    → login incorrecto
-     */
-    fun login(username: String, password: String): String? {
-        val found = users.find { it.username == username && it.password == password }
-        currentUser = found
-        return when {
-            found == null -> null
-            found.username == "admin" -> "admin"
-            else -> "user"
+    fun deleteUser(usuario: UsuarioEntity) {
+        viewModelScope.launch {
+            repository.deleteUser(usuario)
+            loadUsers()
         }
     }
 
     /**
-     * Recarga lista de usuarios.
+     * Login usando RUT + contraseña.
      */
-    private fun refreshUsers() {
-        users.clear()
-        users.addAll(repository.getAllUsers())
+    fun login(rutStr: String, pass: String): String? {
+        val rut = rutStr.toLongOrNull() ?: return null
+
+        val found = users.find {
+            it.rut_usu == rut && it.contrasenia_usu == pass
+        }
+
+        currentUser = found
+
+        return when {
+            found == null -> null
+            found.id_perfil == 1L -> "admin"
+            else -> "user"
+        }
     }
+
 }

@@ -7,11 +7,15 @@ plugins {
 
     // Plugin de Jetpack Compose
     alias(libs.plugins.kotlin.compose)
+
+    // NECESARIO PARA QUE ROOM GENERE CÓDIGO
+    id("kotlin-kapt")
+
 }
 
 android {
-    namespace = "com.example.tadpole_g4"
-    compileSdk = 36
+    namespace = "com.example.tadpole_g4"    // Usa el namespace real de tu proyecto
+    compileSdk = 36                         // Usa la versión de SDK más reciente permitida
 
     defaultConfig {
         applicationId = "com.example.tadpole_g4"
@@ -131,4 +135,18 @@ dependencies {
     // ============================================================
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+    // ============================================================
+    // ROOM: Base de datos local de Android
+    // ============================================================
+
+    // Biblioteca principal de Room (maneja SQLite)
+    implementation("androidx.room:room-runtime:2.5.2")
+
+    // Procesador de anotaciones — genera automáticamente las clases DAO
+    // Requiere tener activado el plugin "kotlin-kapt" en la parte superior
+    kapt("androidx.room:room-compiler:2.5.2")
+
+    // Extensiones para usar corrutinas (suspend fun, Flow, etc.)
+    implementation("androidx.room:room-ktx:2.5.2")
 }

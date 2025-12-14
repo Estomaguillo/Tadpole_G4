@@ -1,29 +1,27 @@
 package com.example.tadpole_g4.repository
 
-import com.example.tadpole_g4.model.User
+import com.example.tadpole_g4.data.dao.UsuarioDao
+import com.example.tadpole_g4.data.entity.UsuarioEntity
 
-class UserRepository {
-    private val users = mutableListOf<User>()
+class UserRepository(private val usuarioDao: UsuarioDao) {
 
-    init {
-        users.add(User(id = 1, username = "admin", email = "admin@demo.com", password = "1234"))
+    suspend fun insertUser(usuario: UsuarioEntity) {
+        usuarioDao.insert(usuario)
     }
 
-    fun getAllUsers(): List<User> = users
-
-    fun addUser(user: User) {
-        val nextId = (users.maxOfOrNull { it.id } ?: 0) + 1
-        users.add(user.copy(id = nextId))
+    suspend fun updateUser(usuario: UsuarioEntity) {
+        usuarioDao.update(usuario)
     }
 
-    fun updateUser(updatedUser: User) {
-        val index = users.indexOfFirst { it.id == updatedUser.id }
-        if (index != -1) {
-            users[index] = updatedUser
-        }
+    suspend fun deleteUser(usuario: UsuarioEntity) {
+        usuarioDao.delete(usuario)
     }
 
-    fun deleteUser(user: User) {
-        users.removeIf { it.id == user.id }
+    suspend fun getUserByRut(rut: Long): UsuarioEntity? {
+        return usuarioDao.findByRut(rut)
+    }
+
+    suspend fun getAllUsers(): List<UsuarioEntity> {
+        return usuarioDao.getAll()
     }
 }
